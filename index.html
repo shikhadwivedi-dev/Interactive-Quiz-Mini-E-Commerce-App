@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shikha's Mini Store - Project 05 | Interactive E-Commerce App</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#fff7ed;color:#0f172a}
+header{background:#0f172a;color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+header b{font-size:20px}
+header span{background:#ea580c;padding:6px 12px;border-radius:999px;font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filters button{padding:9px 16px;border:1px solid #e2e8f0;background:white;border-radius:999px;cursor:pointer}
+.filters button.active{background:#0f172a;color:white}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:white;border-radius:16px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,.07);text-align:center}
+.emoji{font-size:48px;margin:8px 0}
+.card h3{font-size:17px;min-height:42px}
+.card p{color:#64748b;font-size:13px;margin:6px 0}
+.price{color:#ea580c;font-weight:bold;font-size:19px;margin:8px 0}
+.card button{width:100%;padding:11px;background:#ea580c;color:white;border:0;border-radius:10px;font-weight:bold;cursor:pointer}
+.card button:hover{background:#c2410c}
+.layout{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:24px;align-items:start}
+.cart-box{background:white;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,.07)}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th{text-align:left;color:#64748b;font-size:13px;border-bottom:1px solid #e2e8f0;padding:8px 4px}
+td{padding:10px 4px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.qty{display:inline-flex;gap:6px;align-items:center}
+.qty button{width:28px;height:28px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;cursor:pointer;font-weight:bold}
+.remove{color:#dc2626;background:none;border:0;cursor:pointer}
+.totals{margin-top:14px;line-height:2}
+.totals b{font-size:19px}
+.checkout{width:100%;padding:13px;background:#0f172a;color:white;border:0;border-radius:10px;font-weight:bold;cursor:pointer;margin-top:10px}
+.checkout:disabled{opacity:.5;cursor:not-allowed}
+.clear{width:100%;padding:10px;background:none;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;margin-top:8px}
+dialog{border:0;border-radius:16px;padding:24px;max-width:480px;width:90%;margin:auto;box-shadow:0 20px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog button{padding:11px 18px;border-radius:10px;border:0;cursor:pointer;margin-top:12px}
+.note{background:#fef3c7;padding:12px;border-radius:10px;font-size:13px;margin:10px 0}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}
+@media(max-width:500px){.grid{grid-template-columns:1fr} header{flex-direction:column;gap:8px}}
+</style>
+</head>
+<body>
+<header><b>Shikha's Mini Store</b><span id="cartBadge">Cart (0) - Rs 0</span></header>
+<div class="wrap">
+<h1 style="font-size:28px">Everyday Essentials, Made Simple</h1>
+<p style="color:#64748b;margin:8px 0 16px">8 products, all from a JavaScript array. Add to cart, change quantity, checkout preview.</p>
+<div class="filters" id="filters">
+<button class="active" data-filter="All">All</button>
+<button data-filter="Stationery">Stationery</button>
+<button data-filter="Home">Home</button>
+<button data-filter="Accessories">Accessories</button>
+</div>
+<div class="grid" id="productGrid"></div>
+<div class="layout">
+<div class="cart-box">
+<h2>Your Cart</h2>
+<p id="emptyMsg" style="color:#64748b;margin-top:12px">Your cart is empty. Add something you like!</p>
+<div id="cartTableWrap"></div>
+<div class="totals" id="totals"></div>
+<button class="checkout" id="checkoutBtn" disabled>Checkout Preview</button>
+<button class="clear" id="clearBtn">Clear Cart</button>
+<p style="font-size:12px;color:#64748b;margin-top:10px">Delivery: Rs 40 if subtotal is below Rs 500, FREE if Rs 500 or more. Demo only - no payment taken.</p>
+</div>
+<div class="cart-box">
+<h3>How totals work</h3>
+<p style="color:#475569;line-height:1.7;margin-top:10px">Subtotal = sum of (price x quantity) using <b>reduce</b>.<br>Delivery = Rs 40 if subtotal &gt; 0 and &lt; Rs 500, else Rs 0.<br>Total = Subtotal + Delivery.<br><br>Cart is saved in <b>localStorage</b>, so it survives a reload.<br><br>Made by Shikha Dwivedi - InternCircle Project 05</p>
+</div>
+</div>
+</div>
+
+<dialog id="checkoutDialog">
+<h2>Checkout Preview - DEMO ONLY</h2>
+<div class="note">This is a demonstration preview. No payment is taken. Please do NOT enter card details.</div>
+<div id="checkoutSummary" style="line-height:1.8"></div>
+<p style="font-weight:bold;margin-top:10px" id="checkoutTotal"></p>
+<button id="placeOrderBtn" style="background:#16a34a;color:white">Place Demo Order</button>
+<button id="closeDialogBtn" style="background:#e2e8f0">Close</button>
+<p id="orderSuccess" style="color:#16a34a;font-weight:bold;margin-top:10px;display:none">Order placed! This was a demo - cart cleared. Thank you!</p>
+</dialog>
+
+<script>
+// 1. DATA - 8 products, prices as NUMBERS
+var products = [
+  { id: 1, name: "Notebook - Ruled, 200 Pages", price: 120, category: "Stationery", emoji: "📓" },
+  { id: 2, name: "Pen Pack - 5 Blue Pens", price: 80, category: "Stationery", emoji: "🖊️" },
+  { id: 3, name: "Desk Lamp - Warm Light", price: 650, category: "Home", emoji: "💡" },
+  { id: 4, name: "Water Bottle - 1 Litre", price: 299, category: "Accessories", emoji: "🧴" },
+  { id: 5, name: "Canvas Tote Bag", price: 349, category: "Accessories", emoji: "👜" },
+  { id: 6, name: "Ceramic Mug - 350ml", price: 249, category: "Home", emoji: "☕" },
+  { id: 7, name: "Sticky Notes - Pack of 4", price: 99, category: "Stationery", emoji: "📝" },
+  { id: 8, name: "Phone Stand - Foldable", price: 199, category: "Accessories", emoji: "📱" }
+];
+// 2. STATE - cart object keyed by product id, from localStorage - exactly like guide
+var cart = {};
+try { cart = JSON.parse(localStorage.getItem("cart") || "{}"); } catch(e){ cart = {}; }
+var currentFilter = "All";
+function money(n){ return n.toLocaleString("en-IN", { style: "currency", currency: "INR" }); }
+// 3. RENDER PRODUCTS - from array, using product id in data attribute
+function renderProducts(){
+  var grid = document.getElementById("productGrid");
+  grid.textContent = "";
+  var list = products.filter(function(p){ return currentFilter === "All" || p.category === currentFilter; });
+  list.forEach(function(p){
+    var div = document.createElement("div"); div.className = "card";
+    var e = document.createElement("div"); e.className = "emoji"; e.textContent = p.emoji;
+    var h = document.createElement("h3"); h.textContent = p.name;
+    var cat = document.createElement("p"); cat.textContent = p.category;
+    var pr = document.createElement("div"); pr.className = "price"; pr.textContent = money(p.price);
+    var btn = document.createElement("button"); btn.textContent = "Add to Cart"; btn.setAttribute("data-id", p.id);
+    btn.addEventListener("click", function(){ addToCart(p.id); });
+    div.appendChild(e); div.appendChild(h); div.appendChild(cat); div.appendChild(pr); div.appendChild(btn);
+    grid.appendChild(div);
+  });
+}
+// 4. CART FUNCTIONS - same as guide
+function addToCart(id){ cart[id] = (cart[id] || 0) + 1; save(); }
+function changeQuantity(id, delta){ cart[id] = (cart[id] || 0) + delta; if(cart[id] <= 0) delete cart[id]; save(); }
+function removeItem(id){ delete cart[id]; save(); }
+function totals(){
+  var subtotal = Object.keys(cart).reduce(function(sum, id){
+    var p = products.find(function(x){ return x.id === Number(id); });
+    return sum + p.price * cart[id];
+  }, 0);
+  var delivery = subtotal > 0 && subtotal < 500 ? 40 : 0;
+  return { subtotal: subtotal, delivery: delivery, total: subtotal + delivery };
+}
+function cartCount(){ return Object.keys(cart).reduce(function(s,id){ return s + cart[id]; }, 0); }
+function save(){ localStorage.setItem("cart", JSON.stringify(cart)); render(); }
+// 5. RENDER CART - table with quantity buttons, line totals
+function render(){
+  renderProducts();
+  var t = totals();
+  document.getElementById("cartBadge").textContent = "Cart (" + cartCount() + ") - " + money(t.total);
+  document.getElementById("emptyMsg").style.display = Object.keys(cart).length === 0 ? "block" : "none";
+  var wrap = document.getElementById("cartTableWrap");
+  wrap.textContent = "";
+  if(Object.keys(cart).length > 0){
+    var table = document.createElement("table");
+    var head = document.createElement("tr");
+    var th1 = document.createElement("th"); th1.textContent = "Item";
+    var th2 = document.createElement("th"); th2.textContent = "Qty";
+    var th3 = document.createElement("th"); th3.textContent = "Total";
+    var th4 = document.createElement("th"); th4.textContent = "";
+    head.appendChild(th1); head.appendChild(th2); head.appendChild(th3); head.appendChild(th4);
+    table.appendChild(head);
+    Object.keys(cart).forEach(function(id){
+      var p = products.find(function(x){ return x.id === Number(id); });
+      var tr = document.createElement("tr");
+      var td1 = document.createElement("td"); td1.textContent = p.emoji + " " + p.name + " - " + money(p.price);
+      var td2 = document.createElement("td");
+      var qtyDiv = document.createElement("span"); qtyDiv.className = "qty";
+      var minus = document.createElement("button"); minus.textContent = "-"; minus.addEventListener("click", function(){ changeQuantity(Number(id), -1); });
+      var q = document.createElement("b"); q.textContent = cart[id];
+      var plus = document.createElement("button"); plus.textContent = "+"; plus.addEventListener("click", function(){ changeQuantity(Number(id), 1); });
+      qtyDiv.appendChild(minus); qtyDiv.appendChild(q); qtyDiv.appendChild(plus); td2.appendChild(qtyDiv);
+      var td3 = document.createElement("td"); td3.textContent = money(p.price * cart[id]);
+      var td4 = document.createElement("td");
+      var rm = document.createElement("button"); rm.className = "remove"; rm.textContent = "Remove"; rm.addEventListener("click", function(){ removeItem(Number(id)); });
+      td4.appendChild(rm);
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+  }
+  var totDiv = document.getElementById("totals");
+  totDiv.textContent = "";
+  var l1 = document.createElement("div"); l1.textContent = "Subtotal: " + money(t.subtotal);
+  var l2 = document.createElement("div"); l2.textContent = "Delivery: " + (t.delivery === 0 ? "FREE" : money(t.delivery));
+  var l3 = document.createElement("div");
+  var b = document.createElement("b"); b.textContent = "Total: " + money(t.total); l3.appendChild(b);
+  totDiv.appendChild(l1); totDiv.appendChild(l2); totDiv.appendChild(l3);
+  document.getElementById("checkoutBtn").disabled = Object.keys(cart).length === 0;
+  document.getElementById("clearBtn").style.display = Object.keys(cart).length === 0 ? "none" : "block";
+}
+// Filters
+document.querySelectorAll("#filters button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll("#filters button").forEach(function(x){ x.classList.remove("active"); });
+    b.classList.add("active"); currentFilter = b.getAttribute("data-filter"); render();
+  });
+});
+document.getElementById("clearBtn").addEventListener("click", function(){ cart = {}; save(); });
+// 6. CHECKOUT - dialog, DEMO ONLY, no payment
+document.getElementById("checkoutBtn").addEventListener("click", function(){
+  var t = totals();
+  var sum = document.getElementById("checkoutSummary"); sum.textContent = "";
+  Object.keys(cart).forEach(function(id){
+    var p = products.find(function(x){ return x.id === Number(id); });
+    var d = document.createElement("div"); d.textContent = p.name + " x " + cart[id] + " = " + money(p.price * cart[id]);
+    sum.appendChild(d);
+  });
+  var d2 = document.createElement("div"); d2.textContent = "Subtotal: " + money(t.subtotal);
+  var d3 = document.createElement("div"); d3.textContent = "Delivery: " + (t.delivery === 0 ? "FREE" : money(t.delivery));
+  sum.appendChild(d2); sum.appendChild(d3);
+  document.getElementById("checkoutTotal").textContent = "Total to pay (DEMO): " + money(t.total);
+  document.getElementById("orderSuccess").style.display = "none";
+  document.getElementById("checkoutDialog").showModal();
+});
+document.getElementById("closeDialogBtn").addEventListener("click", function(){ document.getElementById("checkoutDialog").close(); });
+document.getElementById("placeOrderBtn").addEventListener("click", function(){
+  cart = {}; save();
+  document.getElementById("orderSuccess").style.display = "block";
+  var btn = document.getElementById("placeOrderBtn"); btn.textContent = "Order Placed!";
+  setTimeout(function(){ document.getElementById("checkoutDialog").close(); btn.textContent = "Place Demo Order"; }, 1500);
+});
+render();
+</script>
+</body>
+</html>
